@@ -494,7 +494,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          for(cc=x_state[c].window_start_offset;cc<=x_state[c].window_limit_offset;cc++){
             dot += (float)image[r*cols+(c+cc)] * kernel[center+cc];
          }
-         tempim[r*cols+c] = dot/x_state[c].sum;
+         tempim[c*rows+r] = dot/x_state[c].sum;
       }
    }
 
@@ -517,7 +517,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       for(r=0;r<rows;r++){
          dot = 0.0;
          for(rr=y_state[r].window_start_offset;rr<=y_state[r].window_limit_offset;rr++){
-               dot += tempim[(r+rr)*cols+c] * kernel[center+rr];
+               dot += tempim[c*rows + (r+rr)] * kernel[center+rr];
          }
          (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/y_state[r].sum + 0.5);
       }
