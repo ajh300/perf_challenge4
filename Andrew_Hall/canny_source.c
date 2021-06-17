@@ -418,11 +418,6 @@ void derrivative_x_y(short int *smoothedim, int rows, int cols,
    }
 }
 
-struct offset_state
-{
-   float sum;
-};
-
 /*******************************************************************************
 * PROCEDURE: gaussian_smooth
 * PURPOSE: Blur an image with a gaussian filter.
@@ -439,8 +434,6 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          *kernel,        /* A one dimensional gaussian kernel. */
          dot;            /* Dot product summing variable. */
    float *kernel_sum;    /* Sum of kernel with some elements missing */
-   struct offset_state *x_state,
-                *y_state;
  
 
    /****************************************************************************
@@ -462,14 +455,6 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       fprintf(stderr, "Error allocating the smoothed image.\n");
       exit(1);
    }
-   if ((x_state = (struct offset_state*)calloc(cols, sizeof(struct offset_state))) == NULL){
-      fprintf(stderr, "Error allocating x state.\n");
-      exit(1);
-   }
-   if ((y_state = (struct offset_state*)calloc(rows, sizeof(struct offset_state))) == NULL){
-      fprintf(stderr, "Error allocating y state\n");
-      exit(1);
-   }
    kernel_sum = (float*)alloca(sizeof(float)*(center + 1));
    memset(kernel_sum, 0, sizeof(float)*(center + 1));
 
@@ -479,17 +464,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    ****************************************************************************/
    if(VERBOSE) printf("   Bluring the image in the X-direction.\n");
 
-   /* Calculate limits and sums for every column offset in a row once, and re-use */
-   for (c=0; c<cols;++c){
-      const int window_start_offset = (c >= center) ? -center : -c;
-      const int  window_limit_offset = (c + center < cols) ? center : cols - c;
-      x_state[c].sum = 0.0;
-      for (cc=window_start_offset; cc<window_limit_offset; ++cc){
-         x_state[c].sum += kernel[center + cc];
-      }
-   }
    /* Calculate sum of kernel over different windows */
-
    for (c=0; c<windowsize; ++c)
    {
       kernel_sum[0] += kernel[c];
@@ -511,13 +486,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          for(cc=window_start_offset;cc<=window_limit_offset;cc++){
             dot += (float)image[r*cols+(c+cc)] * kernel[center+cc];
          }
-         tempim[c*rows+r] = dot/x_state[c].sum;
-
-         if (r == 0 && fabsf(x_state[c].sum - kernel_sum[kernel_sum_index]) > 0.001)
-         {
-            fprintf(stderr, "Diff in X direction. Column=%d, cols=%d, center=%d, kernel_sum_index=%d, x_state value: %f, kernel_sum value: %f\n",
-             c, cols, center, kernel_sum_index, x_state[c].sum, kernel_sum[kernel_sum_index]);
-         }
+         tempim[c*rows+r] = dot/kernel_sum[kernel_sum_index];
       }
    }
 
@@ -525,16 +494,6 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    * Blur in the y - direction.
    ****************************************************************************/
    if(VERBOSE) printf("   Bluring the image in the Y-direction.\n");
-
-   /* Calculate limits and sums for every row offset in a row once, and re-use */
-   for (r=0; r<rows;++r){
-      const int window_start_offset = (r >= center) ? -center : -r;
-      const int window_limit_offset = (r + center < rows) ? center : rows - r;
-      y_state[r].sum = 0.0;
-      for (rr=window_start_offset; rr<window_limit_offset; ++rr){
-         y_state[r].sum += kernel[center + rr];
-      }
-   }
 
    for(c=0;c<cols;c++){
       for(r=0;r<rows;r++){
@@ -547,20 +506,12 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          for(rr=window_start_offset;rr<=window_limit_offset;rr++){
                dot += tempim[c*rows + (r+rr)] * kernel[center+rr];
          }
-         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/y_state[r].sum + 0.5);
-
-         if (c == 0 && fabsf(y_state[r].sum - kernel_sum[kernel_sum_index]) > 0.001)
-         {
-            fprintf(stderr, "Diff in Y direction. Row=%d, rows=%d, center=%d, kernel_sum_index=%d. y_state value: %f, kernel_sum value: %f\n", 
-            r, rows, center, kernel_sum_index, y_state[r].sum, kernel_sum[kernel_sum_index]);
-         }
+         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/kernel_sum[kernel_sum_index] + 0.5);
       }
    }
 
    free(tempim);
    free(kernel);
-   free(x_state);
-   free(y_state);
 }
 
 /*******************************************************************************
