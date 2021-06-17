@@ -251,7 +251,7 @@ void canny(unsigned char *image, int rows, int cols, float sigma,
    * Perform non-maximal suppression.
    ****************************************************************************/
    if(VERBOSE) printf("Doing the non-maximal suppression.\n");
-   if((nms = (unsigned char *) calloc(rows*cols,sizeof(unsigned char)))==NULL){
+   if((nms = (unsigned char *) allocate_large_pages(rows*cols*sizeof(unsigned char)))==NULL){
       fprintf(stderr, "Error allocating the nms image.\n");
       exit(1);
    }
@@ -262,7 +262,7 @@ void canny(unsigned char *image, int rows, int cols, float sigma,
    * Use hysteresis to mark the edge pixels.
    ****************************************************************************/
    if(VERBOSE) printf("Doing hysteresis thresholding.\n");
-   if((*edge=(unsigned char *)calloc(rows*cols,sizeof(unsigned char))) ==NULL){
+   if((*edge=(unsigned char *)allocate_large_pages(rows*cols*sizeof(unsigned char))) ==NULL){
       fprintf(stderr, "Error allocating the edge image.\n");
       exit(1);
    }
@@ -273,8 +273,6 @@ void canny(unsigned char *image, int rows, int cols, float sigma,
    * Free all of the memory that we allocated except for the edge image that
    * is still being used to store out result.
    ****************************************************************************/
-   free(magnitude);
-   free(nms);
 }
 
 /*******************************************************************************
@@ -302,7 +300,7 @@ void radian_direction(short int *delta_x, short int *delta_y, int rows,
    /****************************************************************************
    * Allocate an image to store the direction of the gradient.
    ****************************************************************************/
-   if((dirim = (float *) calloc(rows*cols, sizeof(float))) == NULL){
+   if((dirim = (float *) allocate_large_pages(rows*cols*sizeof(float))) == NULL){
       fprintf(stderr, "Error allocating the gradient direction image.\n");
       exit(1);
    }
@@ -363,7 +361,7 @@ void magnitude_x_y(short int *delta_x, short int *delta_y, int rows, int cols,
    /****************************************************************************
    * Allocate an image to store the magnitude of the gradient.
    ****************************************************************************/
-   if((*magnitude = (short *) calloc(rows*cols, sizeof(short))) == NULL){
+   if((*magnitude = (short *) allocate_large_pages(rows*cols*sizeof(short))) == NULL){
       fprintf(stderr, "Error allocating the magnitude image.\n");
       exit(1);
    }
