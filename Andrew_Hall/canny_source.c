@@ -439,6 +439,8 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          *kernel,        /* A one dimensional gaussian kernel. */
          dot;            /* Dot product summing variable. */
    float *kernel_sum;    /* Sum of kernel with some elements missing */
+   struct offset_state *x_state,
+                *y_state;
  
 
    /****************************************************************************
@@ -458,6 +460,14 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    if(((*smoothedim) = (short int *) calloc(rows*cols,
          sizeof(short int))) == NULL){
       fprintf(stderr, "Error allocating the smoothed image.\n");
+      exit(1);
+   }
+   if ((x_state = (struct offset_state*)calloc(cols, sizeof(struct offset_state))) == NULL){
+      fprintf(stderr, "Error allocating x state.\n");
+      exit(1);
+   }
+   if ((y_state = (struct offset_state*)calloc(rows, sizeof(struct offset_state))) == NULL){
+      fprintf(stderr, "Error allocating y state\n");
       exit(1);
    }
    kernel_sum = (float*)alloca(sizeof(float)*(center + 1));
@@ -482,7 +492,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
 
    for (c=0; c<windowsize; ++c)
    {
-      kernel_sum[0] += kernel[windowsize];
+      kernel_sum[0] += kernel[c];
    }
 
    //Now calculate the sum with various numbers of values missing
@@ -495,13 +505,19 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       for(c=0;c<cols;c++){
          const int window_start_offset = (c >= center) ? -center : -c;
          const int window_limit_offset = (c + center < cols) ? center : cols - c;
-         const int kernel_sum_index = c < center ? center - c : (c + center >= cols) ? c + center - cols - 1 : 0;
+         const int kernel_sum_index = c < center ? center - c : (c + center >= cols) ? c + center - cols + 1 : 0;
          dot = 0.0;
 
          for(cc=window_start_offset;cc<=window_limit_offset;cc++){
             dot += (float)image[r*cols+(c+cc)] * kernel[center+cc];
          }
-         tempim[c*rows+r] = dot/kernel_sum[kernel_sum_index];
+         tempim[c*rows+r] = dot/x_state[c].sum;
+
+         if (r == 0 && fabsf(x_state[c].sum - kernel_sum[kernel_sum_index]) > 0.001)
+         {
+            fprintf(stderr, "Diff in X direction. Column=%d, cols=%d, center=%d, kernel_sum_index=%d, x_state value: %f, kernel_sum value: %f\n",
+             c, cols, center, kernel_sum_index, x_state[c].sum, kernel_sum[kernel_sum_index]);
+         }
       }
    }
 
@@ -524,19 +540,27 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       for(r=0;r<rows;r++){
          const int window_start_offset = (r >= center) ? -center : -r;
          const int window_limit_offset = (r + center < rows) ? center : rows - r;
-         const int kernel_sum_index = r < center ? center - r : (r + center >= rows) ? r + center - rows - 1 : 0;
+         const int kernel_sum_index = r < center ? center - r : (r + center >= rows) ? r + center - rows + 1 : 0;
 
          dot = 0.0;
 
          for(rr=window_start_offset;rr<=window_limit_offset;rr++){
                dot += tempim[c*rows + (r+rr)] * kernel[center+rr];
          }
-         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/kernel_sum[kernel_sum_index] + 0.5);
+         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/y_state[r].sum + 0.5);
+
+         if (c == 0 && fabsf(y_state[r].sum - kernel_sum[kernel_sum_index]) > 0.001)
+         {
+            fprintf(stderr, "Diff in Y direction. Row=%d, rows=%d, center=%d, kernel_sum_index=%d. y_state value: %f, kernel_sum value: %f\n", 
+            r, rows, center, kernel_sum_index, y_state[r].sum, kernel_sum[kernel_sum_index]);
+         }
       }
    }
 
    free(tempim);
    free(kernel);
+   free(x_state);
+   free(y_state);
 }
 
 /*******************************************************************************
