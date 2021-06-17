@@ -419,8 +419,6 @@ void derrivative_x_y(short int *smoothedim, int rows, int cols,
 
 struct offset_state
 {
-   int window_start_offset;
-   int window_limit_offset;
    float sum;
 };
 
@@ -480,18 +478,20 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
 
    /* Calculate limits and sums for every column offset in a row once, and re-use */
    for (c=0; c<cols;++c){
-      x_state[c].window_start_offset = (c >= center) ? -center : -c;
-      x_state[c].window_limit_offset = (c + center < cols) ? center : cols - c;
+      const int window_start_offset = (c >= center) ? -center : -c;
+      const int  window_limit_offset = (c + center < cols) ? center : cols - c;
       x_state[c].sum = 0.0;
-      for (cc=x_state[c].window_start_offset; cc<x_state[c].window_limit_offset; ++cc){
+      for (cc=window_start_offset; cc<window_limit_offset; ++cc){
          x_state[c].sum += kernel[center + cc];
       }
    }
 
    for(r=0;r<rows;r++){
       for(c=0;c<cols;c++){
+         const int window_start_offset = (c >= center) ? -center : -c;
+         const int  window_limit_offset = (c + center < cols) ? center : cols - c;
          dot = 0.0;
-         for(cc=x_state[c].window_start_offset;cc<=x_state[c].window_limit_offset;cc++){
+         for(cc=window_start_offset;cc<=window_limit_offset;cc++){
             dot += (float)image[r*cols+(c+cc)] * kernel[center+cc];
          }
          tempim[c*rows+r] = dot/x_state[c].sum;
@@ -505,18 +505,20 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
 
    /* Calculate limits and sums for every row offset in a row once, and re-use */
    for (r=0; r<rows;++r){
-      y_state[r].window_start_offset = (r >= center) ? -center : -r;
-      y_state[r].window_limit_offset = (r + center < rows) ? center : rows - r;
+      const int window_start_offset = (r >= center) ? -center : -r;
+      const int window_limit_offset = (r + center < rows) ? center : rows - r;
       y_state[r].sum = 0.0;
-      for (rr=y_state[r].window_start_offset; rr<y_state[r].window_limit_offset; ++rr){
+      for (rr=window_start_offset; rr<window_limit_offset; ++rr){
          y_state[r].sum += kernel[center + rr];
       }
    }
 
    for(c=0;c<cols;c++){
       for(r=0;r<rows;r++){
+         const int window_start_offset = (r >= center) ? -center : -r;
+         const int window_limit_offset = (r + center < rows) ? center : rows - r;
          dot = 0.0;
-         for(rr=y_state[r].window_start_offset;rr<=y_state[r].window_limit_offset;rr++){
+         for(rr=window_start_offset;rr<=window_limit_offset;rr++){
                dot += tempim[c*rows + (r+rr)] * kernel[center+rr];
          }
          (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/y_state[r].sum + 0.5);
