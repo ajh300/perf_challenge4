@@ -439,6 +439,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    float *tempim,        /* Buffer for separable filter gaussian smoothing. */
          *kernel,        /* A one dimensional gaussian kernel. */
          dot;            /* Dot product summing variable. */
+   float kernel_sum;
  
 
    struct offset_state *x_state,
@@ -473,15 +474,41 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    }
 
 
+   /* Calculate sum of kernel */
+   kernel_sum = 0.0;
+   for (c = 0; c < windowsize; ++c)
+   {
+      kernel_sum += kernel[c];
+   }
+   kernel_sum = 1.0 / kernel_sum;
+
    /****************************************************************************
    * Blur in the x - direction.
    ****************************************************************************/
    if(VERBOSE) printf("   Bluring the image in the X-direction.\n");
 
    /* Calculate limits and sums for every column offset in a row once, and re-use */
-   for (c=0; c<cols;++c){
-      x_state[c].window_start_offset = (c >= center) ? -center : -c;
-      x_state[c].window_limit_offset = (c + center < cols) ? center : cols - c;
+   /* Fill in the easy middle */
+   for (c=center; c < cols - center; ++c)
+   {
+      x_state[c].window_start_offset = -center;
+      x_state[c].window_limit_offset = center;
+      x_state[c].sum = kernel_sum;
+   }
+
+   for (c=0; c<center;++c){
+      x_state[c].window_start_offset = -c;
+      x_state[c].window_limit_offset = center;
+      x_state[c].sum = 0.0;
+      for (cc=x_state[c].window_start_offset; cc<x_state[c].window_limit_offset; ++cc){
+         x_state[c].sum += kernel[center + cc];
+      }
+      x_state[c].sum = 1.0f / x_state[c].sum;
+   }
+
+   for (c=cols - center; c<cols;++c){
+      x_state[c].window_start_offset = -center;
+      x_state[c].window_limit_offset = cols - c;
       x_state[c].sum = 0.0;
       for (cc=x_state[c].window_start_offset; cc<x_state[c].window_limit_offset; ++cc){
          x_state[c].sum += kernel[center + cc];
