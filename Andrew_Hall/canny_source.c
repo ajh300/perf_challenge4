@@ -57,6 +57,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <sys/mman.h>
+#include <errno.h>
+
 #define VERBOSE 0
 #define BOOSTBLURFACTOR 90.0
 
@@ -162,6 +165,27 @@ int main(int argc, char *argv[])
    return 0;
 }
 
+void *allocate_large_pages(size_t size)
+{
+   int err;
+   void *to_return = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+   if (to_return == MAP_FAILED) {
+      fprintf(stderr, "mmap failed. errno: %d", errno);
+      exit(1);
+   }
+
+   err = madvise(to_return, size, MADV_SEQUENTIAL | MADV_HUGEPAGE);
+
+   if (err)
+   {
+      fprintf(stderr, "madvise failed. errno: %d", errno);
+      exit(1);
+   }
+
+   return to_return;
+}
+
 /*******************************************************************************
 * PROCEDURE: canny
 * PURPOSE: To perform canny edge detection.
@@ -249,9 +273,6 @@ void canny(unsigned char *image, int rows, int cols, float sigma,
    * Free all of the memory that we allocated except for the edge image that
    * is still being used to store out result.
    ****************************************************************************/
-   free(smoothedim);
-   free(delta_x);
-   free(delta_y);
    free(magnitude);
    free(nms);
 }
@@ -377,11 +398,11 @@ void derrivative_x_y(short int *smoothedim, int rows, int cols,
    /****************************************************************************
    * Allocate images to store the derivatives.
    ****************************************************************************/
-   if(((*delta_x) = (short *) calloc(rows*cols, sizeof(short))) == NULL){
+   if(((*delta_x) = (short *) allocate_large_pages(rows*cols*sizeof(short))) == NULL){
       fprintf(stderr, "Error allocating the delta_x image.\n");
       exit(1);
    }
-   if(((*delta_y) = (short *) calloc(rows*cols, sizeof(short))) == NULL){
+   if(((*delta_y) = (short *) allocate_large_pages(rows*cols*sizeof(short))) == NULL){
       fprintf(stderr, "Error allocating the delta_x image.\n");
       exit(1);
    }
@@ -454,12 +475,11 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    /****************************************************************************
    * Allocate a temporary buffer image and the smoothed image.
    ****************************************************************************/
-   if((tempim = (float *) calloc(rows*cols, sizeof(float))) == NULL){
+   if((tempim = (float *) allocate_large_pages(rows*cols*sizeof(float))) == NULL){
       fprintf(stderr, "Error allocating the buffer image.\n");
       exit(1);
    }
-   if(((*smoothedim) = (short int *) calloc(rows*cols,
-         sizeof(short int))) == NULL){
+   if(((*smoothedim) = (short int *) allocate_large_pages(rows*cols*sizeof(short int))) == NULL){
       fprintf(stderr, "Error allocating the smoothed image.\n");
       exit(1);
    }
@@ -525,7 +545,6 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       }
    }
 
-   free(tempim);
    free(kernel);
    free(x_state);
    free(y_state);
@@ -979,7 +998,7 @@ int read_pgm_image(char *infilename, unsigned char **image, int *rows,
    /***************************************************************************
    * Allocate memory to store the image then read the image from the file.
    ***************************************************************************/
-   if(((*image) = (unsigned char *) malloc((*rows)*(*cols))) == NULL){
+   if(((*image) = (unsigned char *) allocate_large_pages((*rows)*(*cols))) == NULL){
       fprintf(stderr, "Memory allocation failure in read_pgm_image().\n");
       if(fp != stdin) fclose(fp);
       return(0);
@@ -987,7 +1006,6 @@ int read_pgm_image(char *infilename, unsigned char **image, int *rows,
    if((*rows) != fread((*image), (*cols), (*rows), fp)){
       fprintf(stderr, "Error reading the image data in read_pgm_image().\n");
       if(fp != stdin) fclose(fp);
-      free((*image));
       return(0);
    }
 
