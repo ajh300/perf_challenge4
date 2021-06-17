@@ -476,6 +476,12 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
       kernel_sum[c] = kernel_sum[c-1] - kernel[c-1];
    }
 
+   //Now calculate reciprocal of kernel_sum so we can multiply rather than divide
+   for (c=0; c <= center; ++c)
+   {
+      kernel_sum[c] = 1.0f / kernel_sum[c];
+   }
+
    for(r=0;r<rows;r++){
       for(c=0;c<cols;c++){
          const int window_start_offset = (c >= center) ? -center : -c;
@@ -486,7 +492,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          for(cc=window_start_offset;cc<=window_limit_offset;cc++){
             dot += (float)image[r*cols+(c+cc)] * kernel[center+cc];
          }
-         tempim[c*rows+r] = dot/kernel_sum[kernel_sum_index];
+         tempim[c*rows+r] = dot*kernel_sum[kernel_sum_index];
       }
    }
 
@@ -506,7 +512,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
          for(rr=window_start_offset;rr<=window_limit_offset;rr++){
                dot += tempim[c*rows + (r+rr)] * kernel[center+rr];
          }
-         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR/kernel_sum[kernel_sum_index] + 0.5);
+         (*smoothedim)[r*cols+c] = (short int)(dot*BOOSTBLURFACTOR*kernel_sum[kernel_sum_index] + 0.5);
       }
    }
 
