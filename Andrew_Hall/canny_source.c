@@ -70,16 +70,16 @@ int write_pgm_image(char *outfilename, unsigned char *image, int rows,
 
 void canny(unsigned char *image, int rows, int cols, float sigma,
          float tlow, float thigh, unsigned char **edge, char *fname);
-void gaussian_smooth(unsigned char * image, int rows, int cols, float sigma,
+void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
         short int **smoothedim);
 void make_gaussian_kernel(float sigma, float **kernel, int *windowsize);
-void derrivative_x_y(short int *  restrict smoothedim, int rows, int cols,
-        short int * restrict *delta_x, short int * restrict *delta_y);
-void magnitude_x_y(short int *  restrict  delta_x, short int *  restrict delta_y, int rows, int cols,
-        short int * restrict * magnitude);
-void apply_hysteresis(short int * mag, unsigned char * nms, int rows, int cols,
-        float tlow, float thigh, unsigned char * edge);
-void radian_direction(short int * delta_x, short int * delta_y, int rows,
+void derrivative_x_y(short int *smoothedim, int rows, int cols,
+        short int **delta_x, short int **delta_y);
+void magnitude_x_y(short int *delta_x, short int *delta_y, int rows, int cols,
+        short int **magnitude);
+void apply_hysteresis(short int *mag, unsigned char *nms, int rows, int cols,
+        float tlow, float thigh, unsigned char *edge);
+void radian_direction(short int *delta_x, short int *delta_y, int rows,
     int cols, float **dir_radians, int xdirtag, int ydirtag);
 double angle_radians(double x, double y);
 void non_max_supp(short *mag, short *gradx, short *grady, int nrows, int ncols,
@@ -290,7 +290,7 @@ void canny(unsigned char *image, int rows, int cols, float sigma,
 * The resulting angle is in radians measured counterclockwise from the
 * xdirection. The angle points "up the gradient".
 *******************************************************************************/
-void radian_direction(short int *restrict delta_x, short int * restrict delta_y, int rows,
+void radian_direction(short int *delta_x, short int *delta_y, int rows,
     int cols, float **dir_radians, int xdirtag, int ydirtag)
 {
    int r, c, pos;
@@ -353,8 +353,8 @@ double angle_radians(double x, double y)
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void magnitude_x_y(short int * restrict delta_x, short int * restrict delta_y, int rows, int cols,
-        short int * restrict * magnitude)
+void magnitude_x_y(short int *delta_x, short int *delta_y, int rows, int cols,
+        short int **magnitude)
 {
    int r, c, pos, sq1, sq2;
 
@@ -388,8 +388,8 @@ void magnitude_x_y(short int * restrict delta_x, short int * restrict delta_y, i
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void derrivative_x_y(short int * restrict smoothedim, int rows, int cols,
-        short int * restrict *delta_x, short int * restrict *delta_y)
+void derrivative_x_y(short int *smoothedim, int rows, int cols,
+        short int **delta_x, short int **delta_y)
 {
    int r, c, pos;
 
@@ -460,8 +460,8 @@ struct offset_state
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void gaussian_smooth(unsigned char * restrict image, int rows, int cols, float sigma,
-        short int **restrict smoothedim)
+void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
+        short int **smoothedim)
 {
    int r, c, rr, cc,     /* Counter variables. */
       windowsize,        /* Dimension of the gaussian kernel. */
@@ -619,7 +619,7 @@ void make_gaussian_kernel(float sigma, float **kernel, int *windowsize)
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void follow_edges(unsigned char * restrict edgemapptr, short * restrict edgemagptr, short lowval,
+void follow_edges(unsigned char *edgemapptr, short *edgemagptr, short lowval,
    int cols)
 {
    short *tempmagptr;
@@ -648,8 +648,8 @@ void follow_edges(unsigned char * restrict edgemapptr, short * restrict edgemagp
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void apply_hysteresis(short int * restrict mag, unsigned char * restrict nms, int rows, int cols,
-	float tlow, float thigh, unsigned char * restrict edge)
+void apply_hysteresis(short int *mag, unsigned char *nms, int rows, int cols,
+	float tlow, float thigh, unsigned char *edge)
 {
    int r, c, pos, numedges, lowcount, highcount, lowthreshold, highthreshold,
        i, hist[32768], rr, cc;
@@ -754,8 +754,8 @@ void apply_hysteresis(short int * restrict mag, unsigned char * restrict nms, in
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict grady, int nrows, int ncols,
-    unsigned char * restrict result) 
+void non_max_supp(short *mag, short *gradx, short *grady, int nrows, int ncols,
+    unsigned char *result) 
 {
     int rowcount, colcount,count;
     short *magrowptr,*magptr;
