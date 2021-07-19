@@ -425,17 +425,6 @@ void derrivative_x_y(short int *smoothedim, int rows, int cols,
    * losing pixels.
    ****************************************************************************/
    if(VERBOSE) printf("   Computing the Y-direction derivative.\n");
-   /*
-   for(c=0;c<cols;c++){
-      pos = c;
-      (*delta_y)[pos] = smoothedim[pos+cols] - smoothedim[pos];
-      pos += cols;
-      for(r=1;r<(rows-1);r++,pos+=cols){
-         (*delta_y)[pos] = smoothedim[pos+cols] - smoothedim[pos-cols];
-      }
-      (*delta_y)[pos] = smoothedim[pos] - smoothedim[pos-cols];
-   }
-   */
 
    for(pos=0;pos<(rows*cols);++pos)
    {
@@ -490,6 +479,7 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    ****************************************************************************/
    if(VERBOSE) printf("   Computing the gaussian smoothing kernel.\n");
    make_gaussian_kernel(sigma, &kernel, &windowsize);
+   
    center = windowsize / 2;
 
    /****************************************************************************
