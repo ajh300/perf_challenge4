@@ -480,6 +480,13 @@ void gaussian_smooth(unsigned char *image, int rows, int cols, float sigma,
    if(VERBOSE) printf("   Computing the gaussian smoothing kernel.\n");
    make_gaussian_kernel(sigma, &kernel, &windowsize);
    
+   if (windowsize != 5)
+   {
+      fprintf(stderr, "Error, unexpected windowsize: %d\n", windowsize);
+      exit(1);
+      return;
+   }
+   
    center = windowsize / 2;
 
    /****************************************************************************
