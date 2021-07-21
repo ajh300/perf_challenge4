@@ -754,8 +754,8 @@ void apply_hysteresis(short int *mag, unsigned char *nms, int rows, int cols,
 * NAME: Mike Heath
 * DATE: 2/15/96
 *******************************************************************************/
-void non_max_supp(short *mag, short *gradx, short *grady, int nrows, int ncols,
-    unsigned char *result) 
+void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict grady, int nrows, int ncols,
+    unsigned char * restrict result) 
 {
     int rowcount, colcount,count;
     short *magrowptr,*magptr;
