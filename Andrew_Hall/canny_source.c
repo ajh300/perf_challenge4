@@ -789,83 +789,47 @@ void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict
       resultrowptr+=ncols){   
       for(colcount=1,magptr=magrowptr,gxptr=gxrowptr,gyptr=gyrowptr,
          resultptr=resultrowptr;colcount<ncols-2; 
-         colcount++,magptr++,gxptr++,gyptr++,resultptr++){
-
-         const short previous_row_previous_pixel_mag = *(magptr - ncols - 1);
-         const short previous_row_this_pixel_mag = *(magptr - ncols);
-         const short previous_row_next_pixel_mag = *(magptr - ncols + 1);
-         const short this_row_previous_pixel_mag = *(magptr - 1);
-         const short this_row_next_pixel_mag = *(magptr + 1);
-         const short next_row_previous_pixel_mag = *(magptr + ncols - 1);
-         const short next_row_this_pixel_mag = *(magptr + ncols);
-         const short next_row_next_pixel_mag = *(magptr + ncols + 1);
-
-         float option_111_mag1;
-         float option_111_mag2;
-         float option_110_mag1;
-         float option_110_mag2;
-         float option_101_mag1;
-         float option_101_mag2;
-         float option_100_mag1;
-         float option_100_mag2;
-         float option_011_mag1;
-         float option_011_mag2;
-         float option_010_mag1;
-         float option_010_mag2;
-         float option_001_mag1;
-         float option_001_mag2;
-         float option_000_mag1;
-         float option_000_mag2;
-
-
+         colcount++,magptr++,gxptr++,gyptr++,resultptr++){   
          m00 = *magptr;
-
          if(m00 == 0){
             *resultptr = (unsigned char) NOEDGE;
-            continue;
          }
          else{
             xperp = -(gx = *gxptr)/((float)m00);
             yperp = (gy = *gyptr)/((float)m00);
          }
 
-         option_111_mag1 = (m00 - this_row_previous_pixel_mag)*xperp + (previous_row_previous_pixel_mag - this_row_previous_pixel_mag)*yperp;
-         option_111_mag2 = (m00 - this_row_next_pixel_mag)*xperp + (next_row_next_pixel_mag - this_row_next_pixel_mag)*yperp;
-
-         option_110_mag1 = (previous_row_this_pixel_mag - previous_row_previous_pixel_mag)*xperp + (previous_row_this_pixel_mag - m00)*yperp;
-         option_110_mag2 =  (next_row_this_pixel_mag - next_row_next_pixel_mag)*xperp + (next_row_this_pixel_mag - m00)*yperp; 
-
-         option_101_mag1 = (m00 - this_row_previous_pixel_mag)*xperp + (this_row_previous_pixel_mag - next_row_previous_pixel_mag)*yperp;
-         option_101_mag2 = (m00 - this_row_next_pixel_mag)*xperp + (this_row_next_pixel_mag - previous_row_next_pixel_mag)*yperp;
-
-         option_100_mag1 = (next_row_this_pixel_mag - next_row_previous_pixel_mag)*xperp + (m00 - next_row_this_pixel_mag)*yperp;
-         option_100_mag2 = (previous_row_this_pixel_mag - previous_row_next_pixel_mag)*xperp  + (m00 - previous_row_this_pixel_mag)*yperp; 
-
-         option_011_mag1 = (this_row_next_pixel_mag - m00)*xperp + (previous_row_next_pixel_mag - this_row_next_pixel_mag)*yperp;
-         option_011_mag2 = (this_row_previous_pixel_mag - m00)*xperp + (next_row_previous_pixel_mag - this_row_previous_pixel_mag)*yperp;
-
-         option_010_mag1 = (previous_row_next_pixel_mag - previous_row_this_pixel_mag)*xperp + (previous_row_this_pixel_mag - m00)*yperp;
-         option_010_mag2 = (next_row_previous_pixel_mag - next_row_this_pixel_mag)*xperp + (next_row_this_pixel_mag - m00)*yperp;
-
-         option_001_mag1 = (this_row_next_pixel_mag - m00)*xperp + (this_row_next_pixel_mag - next_row_next_pixel_mag)*yperp;
-         option_001_mag2 = (this_row_previous_pixel_mag - m00)*xperp + (this_row_previous_pixel_mag - previous_row_previous_pixel_mag)*yperp;
-
-         option_000_mag1 = (next_row_next_pixel_mag - next_row_this_pixel_mag)*xperp + (m00 - next_row_this_pixel_mag)*yperp;
-         option_000_mag2 = (previous_row_previous_pixel_mag - previous_row_this_pixel_mag)*xperp + (m00 - previous_row_this_pixel_mag)*yperp;
-
          if(gx >= 0){
             if(gy >= 0){
                     if (gx >= gy)
                     {  
                         /* 111 */
-                        mag1 = option_111_mag1;
-                        mag2 = option_111_mag2;
+                        /* Left point */
+                        z1 = *(magptr - 1);
+                        z2 = *(magptr - ncols - 1);
+
+                        mag1 = (m00 - z1)*xperp + (z2 - z1)*yperp;
+                        
+                        /* Right point */
+                        z1 = *(magptr + 1);
+                        z2 = *(magptr + ncols + 1);
+
+                        mag2 = (m00 - z1)*xperp + (z2 - z1)*yperp;
                     }
                     else
                     {    
                         /* 110 */
-                        mag1 = option_110_mag1;
-                        mag2 = option_110_mag2;
+                        /* Left point */
+                        z1 = *(magptr - ncols);
+                        z2 = *(magptr - ncols - 1);
+
+                        mag1 = (z1 - z2)*xperp + (z1 - m00)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr + ncols);
+                        z2 = *(magptr + ncols + 1);
+
+                        mag2 = (z1 - z2)*xperp + (z1 - m00)*yperp; 
                     }
                 }
                 else
@@ -873,14 +837,32 @@ void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict
                     if (gx >= -gy)
                     {
                         /* 101 */
-                        mag1 = option_101_mag1;
-                        mag2 = option_101_mag2;
+                        /* Left point */
+                        z1 = *(magptr - 1);
+                        z2 = *(magptr + ncols - 1);
+
+                        mag1 = (m00 - z1)*xperp + (z1 - z2)*yperp;
+            
+                        /* Right point */
+                        z1 = *(magptr + 1);
+                        z2 = *(magptr - ncols + 1);
+
+                        mag2 = (m00 - z1)*xperp + (z1 - z2)*yperp;
                     }
                     else
                     {    
                         /* 100 */
-                        mag1 = option_100_mag1;
-                        mag2 = option_100_mag2;
+                        /* Left point */
+                        z1 = *(magptr + ncols);
+                        z2 = *(magptr + ncols - 1);
+
+                        mag1 = (z1 - z2)*xperp + (m00 - z1)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr - ncols);
+                        z2 = *(magptr - ncols + 1);
+
+                        mag2 = (z1 - z2)*xperp  + (m00 - z1)*yperp; 
                     }
                 }
             }
@@ -891,14 +873,32 @@ void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict
                     if (-gx >= gy)
                     {          
                         /* 011 */
-                        mag1 = option_011_mag1;
-                        mag2 = option_011_mag2;
+                        /* Left point */
+                        z1 = *(magptr + 1);
+                        z2 = *(magptr - ncols + 1);
+
+                        mag1 = (z1 - m00)*xperp + (z2 - z1)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr - 1);
+                        z2 = *(magptr + ncols - 1);
+
+                        mag2 = (z1 - m00)*xperp + (z2 - z1)*yperp;
                     }
                     else
                     {
                         /* 010 */
-                        mag1 = option_010_mag1;
-                        mag2 = option_010_mag2;
+                        /* Left point */
+                        z1 = *(magptr - ncols);
+                        z2 = *(magptr - ncols + 1);
+
+                        mag1 = (z2 - z1)*xperp + (z1 - m00)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr + ncols);
+                        z2 = *(magptr + ncols - 1);
+
+                        mag2 = (z2 - z1)*xperp + (z1 - m00)*yperp;
                     }
                 }
                 else
@@ -906,14 +906,32 @@ void non_max_supp(short * restrict mag, short * restrict gradx, short * restrict
                     if (-gx > -gy)
                     {
                         /* 001 */
-                        mag1 = option_001_mag1;
-                        mag2 = option_001_mag2;
+                        /* Left point */
+                        z1 = *(magptr + 1);
+                        z2 = *(magptr + ncols + 1);
+
+                        mag1 = (z1 - m00)*xperp + (z1 - z2)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr - 1);
+                        z2 = *(magptr - ncols - 1);
+
+                        mag2 = (z1 - m00)*xperp + (z1 - z2)*yperp;
                     }
                     else
                     {
                         /* 000 */
-                        mag1 = option_000_mag1;
-                        mag2 = option_000_mag2;
+                        /* Left point */
+                        z1 = *(magptr + ncols);
+                        z2 = *(magptr + ncols + 1);
+
+                        mag1 = (z2 - z1)*xperp + (m00 - z1)*yperp;
+
+                        /* Right point */
+                        z1 = *(magptr - ncols);
+                        z2 = *(magptr - ncols - 1);
+
+                        mag2 = (z2 - z1)*xperp + (m00 - z1)*yperp;
                     }
                 }
             } 
